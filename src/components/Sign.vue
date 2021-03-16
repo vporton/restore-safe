@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Restore funds</h1>
+    <h1>Restore funds: Sign</h1>
     <p>
       Safe address:
       <input v-model="safeAddress"/>
