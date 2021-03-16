@@ -97,8 +97,9 @@ export default {
 //      document.body.removeChild(a);
     },
     async createTransaction() {
+      const amount = Web3.utils.toWei(this.amount);
       const contract = new this.web3.eth.Contract(IERC20.abi, this.safeAddress);
-      const tx = contract.methods.transfer(this.recipient, this.amount).encodeABI();
+      const tx = await (contract.methods.transfer(this.recipient, amount).encodeABI());
       return tx;
     },
     async calculateSignature() {
@@ -108,10 +109,11 @@ export default {
       }
 
       const accounts = await this.web3.eth.getAccounts();
-      const tx = await this.createTransaction();
-      // const dataBinary = this.web3.utils.hexToBytes(data);
-      const sig = await this.web3.eth.sign(tx, accounts[0]);
-      console.log(sig)
+      const txData = await this.createTransaction();
+//      const dataBinary = this.web3.utils.hexToBytes(txData/*.replace(/^0x/, '')*/);
+//      const blob = new Blob([dataBinary], {type: "application/octet-stream"});
+      console.log([txData, accounts[0]]);
+      const sig = await this.web3.eth.personal.sign(txData, accounts[0]);
 
       return sig;
     },
@@ -138,7 +140,7 @@ export default {
     },
     async sendFunds() {
       const contract = new this.web3.eth.Contract(GnosisSafe.abi, this.safeAddress);
-      const baseTx = this.createTransaction();
+      const baseTx = await this.createTransaction();
       const tx = contract.methods.execTransaction(
         this.safeAddress,
         0,
