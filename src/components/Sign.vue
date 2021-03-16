@@ -43,7 +43,6 @@ export default {
       a.click();
       document.body.removeChild(a);
     },
-
     calculateSignature() {
       return "XXX";
     },
