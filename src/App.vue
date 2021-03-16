@@ -1,18 +1,17 @@
 <template>
   <div id="app">
-    <p>
-      <router-link to="/">Create signer's signatures</router-link>
-      |
-      <router-link to="/transact">Accomplish transaction</router-link>
-    </p>
-    <router-view/>
-    <!--Sign/-->
+    <Sign/>
   </div>
 </template>
 
 <script>
+import Sign from './components/Sign.vue'
+
 export default {
   name: 'App',
+  components: {
+    Sign,
+  },
 }
 </script>
 
