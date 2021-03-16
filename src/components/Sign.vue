@@ -14,6 +14,10 @@
       <input v-model="amount"/>
     </p>
     <p>
+      Tokens recipient:
+      <input v-model="recipient"/>
+    </p>
+    <p>
       <button @click="downloadSignature">Download signature</button>
     </p>
   </div>
@@ -26,6 +30,7 @@ export default {
     safeAddress: String,
     token: String,
     amount: String,
+    recipient: String,
   },
   methods: {
     downloadSignature() {
