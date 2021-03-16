@@ -24,6 +24,8 @@
 </template>
 
 <script>
+import Web3 from 'web3';
+
 export default {
   name: 'Sign',
   props: {
@@ -39,11 +41,13 @@ export default {
 
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'signature.bin'; // FIXME: User's account
+      a.download = `${web3.eth.defaultAccount}.bin`;
       a.click();
       document.body.removeChild(a);
     },
     calculateSignature() {
+      const web3 = new Web3(Web3.givenProvider);
+      const data = ;
       return "XXX";
     },
   },
