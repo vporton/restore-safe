@@ -33,10 +33,6 @@ export default {
       const url = URL.createObjectURL(blob);
 
       const a = document.createElement('a');
-      
-      // Set the href and download attributes for the anchor element
-      // You can optionally set other attributes like `title`, etc
-      // Especially, if the anchor element will be attached to the DOM
       a.href = url;
       a.download = 'signature.bin'; // FIXME: User's account
       a.click();
