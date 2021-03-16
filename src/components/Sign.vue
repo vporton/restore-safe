@@ -46,7 +46,7 @@ import GnosisSafe from "@gnosis.pm/safe-contracts/build/contracts/GnosisSafe.jso
 
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-var MyBlobBuilder = function() {
+let MyBlobBuilder = function() {
   this.parts = [];
 }
 
@@ -57,10 +57,22 @@ MyBlobBuilder.prototype.append = function(part) {
 
 MyBlobBuilder.prototype.getBlob = function() {
   if (!this.blob) {
-    this.blob = new Blob(this.parts, { type: "text/plain" });
+    //console.log('w', this.parts)
+    this.blob = new Blob(this.parts, { type: "binary/octet-stream" });
+    //console.log('u', this.blob)
   }
   return this.blob;
 };
+
+async function bufferToHex(buffer) {
+  const b = await buffer.arrayBuffer();
+  console.log('b', b)
+  const u8a = new Uint8Array(b);
+  console.log('u8a', u8a)
+  return '0x' + [...u8a]
+    .map (b => b.toString (16).padStart (2, "0"))
+    .join ("");
+}
 
 export default {
   name: 'Sign',
@@ -112,7 +124,6 @@ export default {
       const txData = await this.createTransaction();
 //      const dataBinary = this.web3.utils.hexToBytes(txData/*.replace(/^0x/, '')*/);
 //      const blob = new Blob([dataBinary], {type: "application/octet-stream"});
-      console.log([txData, accounts[0]]);
       const sig = await this.web3.eth.personal.sign(txData, accounts[0]);
 
       return sig;
@@ -124,16 +135,14 @@ export default {
 
       let fileInfo = {
         filename: file.name,
-        content: undefined,
       }
 
       const reader = new FileReader();
       reader.onload = e => {
-        fileInfo.content = e.target.result;
         const files = self.files;
+        fileInfo.content = e.target.result;
         files.push(fileInfo);
         self.files = files;
-        self.$forceUpdate();
       };
       // reader.readAsArrayBuffer(file);
       reader.readAsBinaryString(file);
@@ -141,23 +150,36 @@ export default {
     async sendFunds() {
       const contract = new this.web3.eth.Contract(GnosisSafe.abi, this.safeAddress);
       const baseTx = await this.createTransaction();
-      const tx = contract.methods.execTransaction(
+      const accounts = await this.web3.eth.getAccounts();
+      console.log([
         this.safeAddress,
         0,
-        await baseTx.encodeABI(),
+        baseTx,
         0, // CALL
         this.gasAmount,
         21000,
         this.gasPrice * 1000000000,
         NULL_ADDRESS,
         NULL_ADDRESS,
-        this.concatenetedSignatures(),
-      ).send();
+        Web3.utils.hexToBytes(await bufferToHex(this.concatenatedSignatures())),
+      ])
+      const tx = contract.methods.execTransaction(
+        this.safeAddress,
+        0,
+        baseTx,
+        0, // CALL
+        this.gasAmount,
+        21000,
+        this.gasPrice * 1000000000,
+        NULL_ADDRESS,
+        NULL_ADDRESS,
+        Web3.utils.hexToBytes(await bufferToHex(this.concatenatedSignatures())),
+      ).send({from: accounts[0]});
       return tx;
     },
-    concatenetedSignatures() {
+    concatenatedSignatures() {
       const myBlobBuilder = new MyBlobBuilder();
-      for(let item in this.files) {
+      for(let item of this.files) {
         myBlobBuilder.append(item.content);
       }
       return myBlobBuilder.getBlob();
