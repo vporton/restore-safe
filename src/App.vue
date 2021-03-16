@@ -1,6 +1,5 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
     <Sign msg="Welcome to Your Vue.js App"/>
   </div>
 </template>
@@ -11,7 +10,7 @@ import Sign from './components/Sign.vue'
 export default {
   name: 'App',
   components: {
-    Sign
+    Sign,
   }
 }
 </script>
