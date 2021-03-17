@@ -91,10 +91,10 @@ export default {
   data() {
     return {
       web3: null,
-      safeAddress: "0x9A27DFFE360450B7B2BC5F733DF0Bcb821e47c6C",
-      token: "0x40ca9504d8ac50a8a9b359cb0d8225cd0f586030",
+      safeAddress: "",
+      token: "",
       amount: "0.3",
-      recipient: "0xC62ce5310E175fcE50589550AF3e1a4bEDe34077",
+      recipient: "",
       files: [],
       gasAmount: 100000,
       gasPrice: 100,
