@@ -77,6 +77,15 @@ async function bufferToHex(buffer) {
     .join ("");
 }
 
+function hexToBlob(hex) {
+  const hexdata = hex.replace(/^0x/, '')
+  let byteArray = new Uint8Array(hexdata.length/2);
+  for (var x = 0; x < byteArray.length; x++){
+    byteArray[x] = parseInt(hexdata.substr(x*2,2), 16);
+  }
+  return new Blob([byteArray], {type: "application/octet-stream"});
+}
+
 export default {
   name: 'Sign',
   data() {
@@ -134,14 +143,15 @@ export default {
     },
     async createArguments() {
       const baseTx = await this.createTransaction({}).encodeABI();
+      // FIXME: Remove gas parameters.
       return [
         this.safeAddress,
         0,
         baseTx,
         0, // CALL
         this.gasAmount,
-        21000,
-        this.gasPrice * 1000000000,
+        0, // 21000,
+        0, // this.gasPrice * 1000000000,
         NULL_ADDRESS,
         NULL_ADDRESS
       ];
@@ -248,7 +258,7 @@ export default {
       const reader = new FileReader();
       reader.onload = e => {
         const files = self.files;
-        fileInfo.content = e.target.result;
+        fileInfo.content = hexToBlob(e.target.result);
         files.push(fileInfo);
         self.files = files;
       };
