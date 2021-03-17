@@ -18,6 +18,9 @@
       <input v-model="recipient"/>
     </p>
     <p>
+      Version: {{safeVersion}}
+    </p>
+    <p>
       Nonce: {{nonce}}
     </p>
     <p>
@@ -99,6 +102,7 @@ export default {
       gasAmount: 100000,
       gasPrice: 100,
       nonce: null,
+      safeVersion: null,
     };
   },
   created() {
@@ -114,9 +118,11 @@ export default {
     async updateNonce() {
       if (!this.safeAddress) {
         this.nonce = null;
+        this.safeVersion = null;
       } else {
         const contract = new this.web3.eth.Contract(GnosisSafe.abi, this.safeAddress);
         this.nonce = await contract.methods.nonce().call();
+        this.safeVersion = await contract.methods.VERSION().call();
       }
     },
     async downloadSignature() {
@@ -188,18 +194,22 @@ export default {
           EIP712Domain: [
             { type: "address", name: "verifyingContract" }
           ],
-          SafeTx: [
-            { type: "address", name: "to" },
-            { type: "uint256", name: "value" },
-            { type: "bytes", name: "data" },
-            { type: "uint8", name: "operation" },
-            { type: "uint256", name: "safeTxGas" },
-            { type: "uint256", name: "baseGas" },
-            { type: "uint256", name: "gasPrice" },
-            { type: "address", name: "gasToken" },
-            { type: "address", name: "refundReceiver" },
-            { type: "uint256", name: "nonce" },
-          ]
+          SafeTx:
+            /*this.safeVersion === '1.2.0' ?*/ [
+              { type: "address", name: "to" },
+              { type: "uint256", name: "value" },
+              { type: "bytes", name: "data" },
+              { type: "uint8", name: "operation" },
+              { type: "uint256", name: "safeTxGas" },
+              { type: "uint256", name: "baseGas" },
+              { type: "uint256", name: "gasPrice" },
+              { type: "address", name: "gasToken" },
+              { type: "address", name: "refundReceiver" },
+              { type: "uint256", name: "nonce" },
+            ] /*:
+            this.safeVersion === '1.1.1' ? [
+
+            ] : []*/,
         },
         domain: {
           verifyingContract: this.safeAddress,
@@ -222,7 +232,7 @@ export default {
         async function doIt() {
           await self.web3.currentProvider.sendAsync({
             jsonrpc: "2.0", 
-            method: "eth_signTypedData_v3", // eth_signTypedData_v3 for MetaMask
+            method: "eth_signTypedData_v4", // eth_signTypedData_v3 for MetaMask
             params: [accounts[0], JSON.stringify(typedData)],
             id: new Date().getTime(),
           },
