@@ -96,7 +96,7 @@ export default {
       amount: "0.3",
       recipient: "0xC62ce5310E175fcE50589550AF3e1a4bEDe34077",
       files: [],
-      gasAmount: 500000,
+      gasAmount: 100000,
       gasPrice: 100,
       nonce: null,
     };
@@ -220,15 +220,9 @@ export default {
       }
       return new Promise((resolve, reject) => {
         async function doIt() {
-          console.log({
-            jsonrpc: "2.0", 
-            method: "eth_signTypedData", // FIXME: eth_signTypedData_v3 for MetaMask
-            params: [accounts[0], JSON.stringify(typedData)],
-            id: new Date().getTime()
-          })
           await self.web3.currentProvider.sendAsync({
             jsonrpc: "2.0", 
-            method: "eth_signTypedData_v4", // eth_signTypedData_v3 for MetaMask
+            method: "eth_signTypedData_v3", // eth_signTypedData_v3 for MetaMask
             params: [accounts[0], JSON.stringify(typedData)],
 //            params: [JSON.stringify(typedData), accounts[0]],
             id: new Date().getTime(),
