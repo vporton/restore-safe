@@ -37,9 +37,6 @@
       Max gas: <input type="number" v-model="gasAmount"/>
     </p>
     <p>
-      Gas price: <input v-model="gasPrice"/>
-    </p>
-    <p>
       <button @click="sendFunds">Send funds</button>
     </p>
   </div>
