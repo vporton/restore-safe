@@ -194,7 +194,7 @@ export default {
             { type: "bytes", name: "data" },
             { type: "uint8", name: "operation" },
             { type: "uint256", name: "safeTxGas" },
-            // { type: "uint256", name: "dataGas" }, // FIXME
+            { type: "uint256", name: "baseGas" }
             { type: "uint256", name: "gasPrice" },
             { type: "address", name: "gasToken" },
             { type: "address", name: "refundReceiver" },
@@ -224,7 +224,6 @@ export default {
             jsonrpc: "2.0", 
             method: "eth_signTypedData_v3", // eth_signTypedData_v3 for MetaMask
             params: [accounts[0], JSON.stringify(typedData)],
-//            params: [JSON.stringify(typedData), accounts[0]],
             id: new Date().getTime(),
           },
           function(err, result) {
