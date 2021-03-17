@@ -133,7 +133,7 @@ export default {
       return tx;
     },
     async createArguments() {
-      const baseTx = await this.createTransaction().encodeABI();
+      const baseTx = await this.createTransaction({}).encodeABI();
       return [
         this.safeAddress,
         0,
@@ -171,101 +171,68 @@ export default {
       const accounts = await self.web3.eth.getAccounts();
 //       const txData = await self.createTransaction().encodeABI();
       const message = { ...await self.createArgumentsHash(), nonce: self.nonce };
+      console.log('message', message)
 
-      const domainData = {
-          name: "Signature Request",
-          version: "2",
-          chainId: parseInt(self.web3.version.network, 10),
-          verifyingContract: self.safeAddress,
-          salt: "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558"
-      };
-
-      const domain = [
-          { name: "name", type: "string" },
-          { name: "version", type: "string" },
-          { name: "chainId", type: "uint256" },
-          { name: "verifyingContract", type: "address" },
-          { name: "salt", type: "bytes32" },
-      ];
-
-      // FIXME: rename
-      const bid = [
-        {
-          "name": "to",
-          "type": "address"
+      const typedData = {
+        types: {
+          EIP712Domain: [
+            { type: "address", name: "verifyingContract" }
+          ],
+          SafeTx: [
+            { type: "address", name: "to" },
+            { type: "uint256", name: "value" },
+            { type: "bytes", name: "data" },
+            { type: "uint8", name: "operation" },
+            { type: "uint256", name: "safeTxGas" },
+            { type: "uint256", name: "dataGas" },
+            { type: "uint256", name: "gasPrice" },
+            { type: "address", name: "gasToken" },
+            { type: "address", name: "refundReceiver" },
+            { type: "uint256", name: "nonce" },
+          ]
         },
-        {
-          "name": "value",
-          "type": "uint256"
+        domain: {
+          verifyingContract: this.safeAddress,
         },
-        {
-          "name": "data",
-          "type": "bytes"
-        },
-        {
-          "name": "operation",
-          "type": "uint8"
-        },
-        {
-          "name": "safeTxGas",
-          "type": "uint256"
-        },
-        {
-          "name": "baseGas",
-          "type": "uint256"
-        },
-        {
-          "name": "gasPrice",
-          "type": "uint256"
-        },
-        {
-          "name": "gasToken",
-          "type": "address"
-        },
-        {
-          "name": "refundReceiver",
-          "type": "address"
-        },
-        {
-          "name": "nonce",
-          "type": "uint256"
-        },
-      ];
-
-      // FIXME
-//      const identity = [
-//          { name: "userId", type: "uint256" },
-//          { name: "wallet", type: "address" },
-//      ];
-
-      const data = JSON.stringify({
-          types: {
-            EIP712Domain: domain,
-            Bid: bid,
-            //Identity: identity,
-          },
-          domain: domainData,
-          primaryType: "Bid",
-          message: message
-      });
-
+        primaryType: "SafeTx",
+        message/*: {
+          to: target,
+          value: "10000000000000000",
+          data: "0x",
+          operation: "0",
+          safeTxGas: "42671",
+          dataGas: "40660",
+          gasPrice: "10000000000",
+          gasToken: "0x0000000000000000000000000000000000000000",
+          refundReceiver: "0x0000000000000000000000000000000000000000",
+          nonce: "0"
+        }*/,
+      }
       return new Promise((resolve, reject) => {
         async function doIt() {
-          await self.web3.currentProvider.sendAsync(
-            {
-              method: "eth_signTypedData_v3",
-              params: [accounts[0], data],
-              from: accounts[0],
-            },
-            function(err, result) {
-              if (err) {
-                reject(err)
-              } else if (result.error) {
-                reject(result.error)
-              } else {
-                resolve(result);
-              }
-            });
+          console.log({
+            jsonrpc: "2.0", 
+            method: "eth_signTypedData_v3", // FIXME: eth_signTypedData_v3 for MetaMask
+            params: [accounts[0], JSON.stringify(typedData)],
+            id: new Date().getTime()
+          })
+          await self.web3.currentProvider.sendAsync({
+            jsonrpc: "2.0", 
+            method: "eth_signTypedData_v4", // eth_signTypedData_v3 for MetaMask
+            params: [accounts[0], JSON.stringify(typedData)],
+//            params: [JSON.stringify(typedData), accounts[0]],
+            id: new Date().getTime(),
+            from: accounts[0],
+          },
+          function(err, result) {
+            if (err) {
+              reject(err)
+            } else if (result.error) {
+              reject(result.error)
+            } else {
+              resolve(result);
+            }
+          });
         }
         doIt();
       });
