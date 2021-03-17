@@ -222,7 +222,7 @@ export default {
         async function doIt() {
           console.log({
             jsonrpc: "2.0", 
-            method: "eth_signTypedData_v3", // FIXME: eth_signTypedData_v3 for MetaMask
+            method: "eth_signTypedData", // FIXME: eth_signTypedData_v3 for MetaMask
             params: [accounts[0], JSON.stringify(typedData)],
             id: new Date().getTime()
           })
