@@ -130,14 +130,16 @@ export default {
       if (sig === undefined) {
         return;
       }
-      const blob = new Blob([ sig.result ], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
 
       const accounts = await this.web3.eth.getAccounts();
 
+      const jsonText = JSON.stringify({signature: sig.result, address: accounts[0]});
+      const blob = new Blob([ jsonText ], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${accounts[0]}.bin`;
+      a.download = `${accounts[0]}.json`;
       a.click();
 //      document.body.removeChild(a);
     },
@@ -256,12 +258,16 @@ export default {
 
       let fileInfo = {
         filename: file.name,
+        from: null,
       }
 
       const reader = new FileReader();
       reader.onload = e => {
         const files = self.files;
-        fileInfo.content = hexToBlob(e.target.result);
+        console.log('q', e.target.result)
+        const j = JSON.parse(e.target.result);
+        fileInfo.content = hexToBlob(j.signature);
+        fileInfo.from = j.from;
         files.push(fileInfo);
         self.files = files;
       };
@@ -280,7 +286,7 @@ export default {
     },
     concatenatedSignatures() {
       const myBlobBuilder = new MyBlobBuilder();
-      for(let item of this.files) {
+      for(let item of this.files.sort(f => f.address)) {
         myBlobBuilder.append(item.content);
       }
       return myBlobBuilder.getBlob();
