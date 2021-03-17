@@ -93,7 +93,7 @@ export default {
       web3: null,
       safeAddress: "",
       token: "",
-      amount: "0.3",
+      amount: "",
       recipient: "",
       files: [],
       gasAmount: 100000,
