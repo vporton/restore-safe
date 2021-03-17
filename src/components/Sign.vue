@@ -115,7 +115,7 @@ export default {
       if (sig === undefined) {
         return;
       }
-      const blob = new Blob([ sig ], { type: 'application/octet-stream' });
+      const blob = new Blob([ sig.result ], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
 
       const accounts = await this.web3.eth.getAccounts();
@@ -258,6 +258,7 @@ export default {
     async sendFunds() {
       const contract = new this.web3.eth.Contract(GnosisSafe.abi, this.safeAddress);
       const accounts = await this.web3.eth.getAccounts();
+      console.log('qq', await bufferToHex(this.concatenatedSignatures()))
       const tx = contract.methods.execTransaction(
         ...await this.createArguments(),
         await bufferToHex(this.concatenatedSignatures()),
