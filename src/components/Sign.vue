@@ -18,6 +18,9 @@
       <input v-model="recipient"/>
     </p>
     <p>
+      Nonce: {{nonce}}
+    </p>
+    <p>
       <button @click="downloadSignature">Download signature</button>
     </p>
     <h1>Restore funds: Do Transaction</h1>
@@ -79,19 +82,34 @@ export default {
   data() {
     return {
       web3: null,
-      safeAddress: "",
-      token: "",
-      amount: "",
-      recipient: "",
+      safeAddress: "0xeaFCF7D8Afe33e443041E073c52423538c0D7851",
+      token: "0x40ca9504d8ac50a8a9b359cb0d8225cd0f586030",
+      amount: "0.3",
+      recipient: "0xC62ce5310E175fcE50589550AF3e1a4bEDe34077",
       files: [],
       gasAmount: 500000,
       gasPrice: 100,
+      nonce: null,
     };
   },
   created() {
     this.web3 = new Web3(Web3.givenProvider);
+    this.updateNonce();
+  },
+  watch: {
+    safeAddress() {
+      this.updateNonce();
+    },
   },
   methods: {
+    async updateNonce() {
+      if (this.safeAddress === '') {
+        this.nonce = null;
+      } else {
+        const contract = new this.web3.eth.Contract(GnosisSafe.abi, this.safeAddress);
+        this.nonce = await contract.methods.nonce().call();
+      }
+    },
     async downloadSignature() {
       const sig = await this.calculateSignature();
       if (sig === undefined) {
@@ -108,25 +126,149 @@ export default {
       a.click();
 //      document.body.removeChild(a);
     },
-    async createTransaction() {
+    createTransaction() {
       const amount = Web3.utils.toWei(this.amount);
       const contract = new this.web3.eth.Contract(IERC20.abi, this.safeAddress);
-      const tx = await (contract.methods.transfer(this.recipient, amount).encodeABI());
+      const tx = contract.methods.transfer(this.recipient, amount);
       return tx;
     },
+    async createArguments() {
+      const baseTx = await this.createTransaction().encodeABI();
+      return [
+        this.safeAddress,
+        0,
+        baseTx,
+        0, // CALL
+        this.gasAmount,
+        21000,
+        this.gasPrice * 1000000000,
+        NULL_ADDRESS,
+        NULL_ADDRESS
+      ];
+    },
+    async createArgumentsHash() {
+      const a = await this.createArguments();
+      return {
+        to: a[0],
+        value: a[1],
+        data: a[2],
+        operation: a[3],
+        safeTxGas: a[4],
+        baseGas: a[5],
+        gasPrice: a[6],
+        gasToken: a[7],
+        refundReceiver: a[8],
+      };
+    },
     async calculateSignature() {
-      if (!this.recipient || /^0x0+$/.test(this.recipient)) {
+      const self = this;
+
+      if (!self.recipient || /^0x0+$/.test(self.recipient)) {
         alert("No recipient specified!!");
         return undefined;
       }
 
-      const accounts = await this.web3.eth.getAccounts();
-      const txData = await this.createTransaction();
-//      const dataBinary = this.web3.utils.hexToBytes(txData/*.replace(/^0x/, '')*/);
-//      const blob = new Blob([dataBinary], {type: "application/octet-stream"});
-      const sig = await this.web3.eth.personal.sign(txData, accounts[0]);
+      const accounts = await self.web3.eth.getAccounts();
+//       const txData = await self.createTransaction().encodeABI();
+      const message = { ...await self.createArgumentsHash(), nonce: self.nonce };
 
-      return sig;
+      const domainData = {
+          name: "Signature Request",
+          version: "2",
+          chainId: parseInt(self.web3.version.network, 10),
+          verifyingContract: self.safeAddress,
+          salt: "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558"
+      };
+
+      const domain = [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" },
+          { name: "salt", type: "bytes32" },
+      ];
+
+      // FIXME: rename
+      const bid = [
+        {
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "name": "operation",
+          "type": "uint8"
+        },
+        {
+          "name": "safeTxGas",
+          "type": "uint256"
+        },
+        {
+          "name": "baseGas",
+          "type": "uint256"
+        },
+        {
+          "name": "gasPrice",
+          "type": "uint256"
+        },
+        {
+          "name": "gasToken",
+          "type": "address"
+        },
+        {
+          "name": "refundReceiver",
+          "type": "address"
+        },
+        {
+          "name": "nonce",
+          "type": "uint256"
+        },
+      ];
+
+      // FIXME
+//      const identity = [
+//          { name: "userId", type: "uint256" },
+//          { name: "wallet", type: "address" },
+//      ];
+
+      const data = JSON.stringify({
+          types: {
+            EIP712Domain: domain,
+            Bid: bid,
+            //Identity: identity,
+          },
+          domain: domainData,
+          primaryType: "Bid",
+          message: message
+      });
+
+      return new Promise((resolve, reject) => {
+        async function doIt() {
+          await self.web3.currentProvider.sendAsync(
+            {
+              method: "eth_signTypedData_v3",
+              params: [accounts[0], data],
+              from: accounts[0],
+            },
+            function(err, result) {
+              if (err) {
+                reject(err)
+              } else if (result.error) {
+                reject(result.error)
+              } else {
+                resolve(result);
+              }
+            });
+        }
+        doIt();
+      });
     },
     loadFile(ev) {
       const self = this;
@@ -149,30 +291,9 @@ export default {
     },
     async sendFunds() {
       const contract = new this.web3.eth.Contract(GnosisSafe.abi, this.safeAddress);
-      const baseTx = await this.createTransaction();
       const accounts = await this.web3.eth.getAccounts();
-      console.log([
-        this.safeAddress,
-        0,
-        baseTx,
-        0, // CALL
-        this.gasAmount,
-        21000,
-        this.gasPrice * 1000000000,
-        NULL_ADDRESS,
-        NULL_ADDRESS,
-        Web3.utils.hexToBytes(await bufferToHex(this.concatenatedSignatures())),
-      ])
       const tx = contract.methods.execTransaction(
-        this.safeAddress,
-        0,
-        baseTx,
-        0, // CALL
-        this.gasAmount,
-        21000,
-        this.gasPrice * 1000000000,
-        NULL_ADDRESS,
-        NULL_ADDRESS,
+        ...await this.createArguments(),
         Web3.utils.hexToBytes(await bufferToHex(this.concatenatedSignatures())),
       ).send({from: accounts[0]});
       return tx;
