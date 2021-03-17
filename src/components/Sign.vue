@@ -151,7 +151,7 @@ export default {
       const baseTx = await this.createTransaction({}).encodeABI();
       // FIXME: Remove gas parameters.
       return [
-        this.safeAddress,
+        this.token,
         0,
         baseTx,
         0, // CALL
