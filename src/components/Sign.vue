@@ -82,7 +82,7 @@ export default {
   data() {
     return {
       web3: null,
-      safeAddress: "0xeaFCF7D8Afe33e443041E073c52423538c0D7851",
+      safeAddress: "0x9A27DFFE360450B7B2BC5F733DF0Bcb821e47c6C",
       token: "0x40ca9504d8ac50a8a9b359cb0d8225cd0f586030",
       amount: "0.3",
       recipient: "0xC62ce5310E175fcE50589550AF3e1a4bEDe34077",
@@ -103,7 +103,7 @@ export default {
   },
   methods: {
     async updateNonce() {
-      if (this.safeAddress === '') {
+      if (!this.safeAddress) {
         this.nonce = null;
       } else {
         const contract = new this.web3.eth.Contract(GnosisSafe.abi, this.safeAddress);
@@ -260,7 +260,7 @@ export default {
       const accounts = await this.web3.eth.getAccounts();
       const tx = contract.methods.execTransaction(
         ...await this.createArguments(),
-        Web3.utils.hexToBytes(await bufferToHex(this.concatenatedSignatures())),
+        await bufferToHex(this.concatenatedSignatures()),
       ).send({from: accounts[0]});
       return tx;
     },
